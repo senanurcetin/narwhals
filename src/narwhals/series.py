@@ -824,10 +824,10 @@ class Series(Generic[IntoSeriesT]):
         """
         return self._compliant_series.max()
 
-    def arg_min(self) -> int:
+    def arg_min(self) -> int | None:
         """Returns the index of the minimum value.
 
-        Null values are ignored.
+        Null values are ignored. Returns None if there are no non-null values.
 
         Examples:
             >>> import pyarrow as pa
@@ -839,10 +839,10 @@ class Series(Generic[IntoSeriesT]):
         """
         return self._compliant_series.arg_min()
 
-    def arg_max(self) -> int:
+    def arg_max(self) -> int | None:
         """Returns the index of the maximum value.
 
-        Null values are ignored.
+        Null values are ignored. Returns None if there are no non-null values.
 
         Examples:
             >>> import polars as pl

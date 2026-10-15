@@ -406,11 +406,11 @@ class PandasLikeSeries(EagerSeries[Any]):
         result = ser.__class__(data, name=ser.name, index=ser.index).loc[ser]
         return self._with_native(result)
 
-    def arg_min(self) -> int:
-        return self.native.argmin()
+    def arg_min(self) -> int | None:
+        return None if self.native.count() == 0 else self.native.argmin()
 
-    def arg_max(self) -> int:
-        return self.native.argmax()
+    def arg_max(self) -> int | None:
+        return None if self.native.count() == 0 else self.native.argmax()
 
     # Binary comparisons
 
