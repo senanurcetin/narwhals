@@ -33,6 +33,9 @@ def test_arg_max_series(
         pytest.param([], None, id="empty"),
         pytest.param([None, None], None, id="all-null"),
         pytest.param([None], None, id="single-null"),
+        pytest.param([None, None, None, None], None, id="all-null-long"),
+        pytest.param([None, 3.0, 3.0, None], 1, id="tie-after-null"),
+        pytest.param([None, -3.0, 2.0, None], 2, id="negative-after-null"),
         pytest.param([None, 3.0, 1.0, None], 1, id="mixed-null"),
     ],
 )
