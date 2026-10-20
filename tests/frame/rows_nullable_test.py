@@ -73,8 +73,8 @@ def test_no_rows(method: str, named: bool) -> None:  # noqa: FBT001
 @pytest.mark.parametrize("named", [False, True])
 @pytest.mark.parametrize("buffer_size", [0, 1, 3, 7, 512])
 def test_nullable_iter_rows_batch_boundaries(
-    named: bool,
-    buffer_size: int,  # noqa: FBT001
+    named: bool,  # noqa: FBT001
+    buffer_size: int,
 ) -> None:
     native = pd.DataFrame(
         {
