@@ -221,7 +221,9 @@ def test_temporal_nat_batch_boundaries(named: bool, buffer_size: int) -> None:  
     assert type(value) is pd.Timestamp
 
 
-def test_pandas_like_fallback_row_api_with_modin_dispatch(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_pandas_like_fallback_row_api_with_modin_dispatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Test non-pandas row dispatch without importing an optional backend."""
     native = pd.DataFrame({"value": [1, 2]})
     frame = nw.from_native(native, eager_only=True)
@@ -234,4 +236,3 @@ def test_pandas_like_fallback_row_api_with_modin_dispatch(monkeypatch: pytest.Mo
     assert compliant.rows(named=True) == expected_named
     assert list(compliant.iter_rows(named=False, buffer_size=2)) == expected_unnamed
     assert list(compliant.iter_rows(named=True, buffer_size=2)) == expected_named
-
