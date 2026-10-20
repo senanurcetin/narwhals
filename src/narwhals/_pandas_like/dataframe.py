@@ -436,7 +436,7 @@ class PandasLikeDataFrame(
                     values = series.to_numpy(dtype=object, na_value=None).tolist()
                     # Pandas can leave NaT unchanged in naive datetime/timedelta
                     # arrays even with na_value=None (e.g. pandas 2.2).
-                    if series.dtype.kind in ("M", "m") and series.hasnans:
+                    if series.dtype.kind in {"M", "m"} and series.hasnans:
                         missing = series.isna().to_numpy()
                         values = [
                             None if is_missing else value
