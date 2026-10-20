@@ -430,7 +430,11 @@ class PandasLikeDataFrame(
                     series.to_numpy(dtype=object, na_value=None).tolist()
                     for _, series in batch.items()  # noqa: PERF102
                 ]
-                rows = zip(*columns, strict=True) if columns else (() for _ in range(len(batch)))
+                rows = (
+                    zip(*columns, strict=True)
+                    if columns
+                    else (() for _ in range(len(batch)))
+                )
                 if named:
                     for row in rows:
                         yield dict(zip(names, row, strict=False))
