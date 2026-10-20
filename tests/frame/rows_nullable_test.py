@@ -124,3 +124,8 @@ def test_nullable_categorical_rows_match(method: str, named: bool) -> None:  # n
     assert result == expected
     json.dumps(result)
     pd.testing.assert_frame_equal(native, original)
+
+
+def test_pandas_named_rows_zero_columns_unchanged() -> None:
+    frame = nw.from_native(pd.DataFrame(index=range(3)), eager_only=True)
+    assert frame.rows(named=True) == []
