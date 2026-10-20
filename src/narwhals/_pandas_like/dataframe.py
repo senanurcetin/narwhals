@@ -431,10 +431,18 @@ class PandasLikeDataFrame(
             batch_size = max(buffer_size, 1)
             for start in range(0, len(self.native), batch_size):
                 batch = self.native.iloc[start : start + batch_size]
-                columns = [
-                    series.to_numpy(dtype=object, na_value=None).tolist()
-                    for _, series in batch.items()  # noqa: PERF102
-                ]
+                columns = []
+                for _, series in batch.items():  # noqa: PERF102
+                    values = series.to_numpy(dtype=object, na_value=None).tolist()
+                    # Pandas can leave NaT unchanged in naive datetime/timedelta
+                    # arrays even with na_value=None (e.g. pandas 2.2).
+                    if series.dtype.kind in {"M", "m"} and series.hasnans:
+                        missing = series.isna().to_numpy()
+                        values = [
+                            None if is_missing else value
+                            for value, is_missing in zip(values, missing, strict=True)
+                        ]
+                    columns.append(values)
                 rows = (
                     zip(*columns, strict=True)
                     if columns
