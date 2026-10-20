@@ -95,10 +95,10 @@ def test_missing_temporal_rows_across_batches(
 
     for i in (1, 511, 513, 1029):
         record = rows[i]
-        row = tuple(record.values()) if isinstance(record, dict) else record
+        row = tuple(record.values()) if isinstance(record, dict) else tuple(record)
         assert row == (None,)
     record = rows[512]
-    row = tuple(record.values()) if isinstance(record, dict) else record
+    row = tuple(record.values()) if isinstance(record, dict) else tuple(record)
     assert type(row[0]) is pd.Timestamp
 
 
