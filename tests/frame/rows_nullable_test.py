@@ -10,7 +10,9 @@ import narwhals as nw
 
 @pytest.mark.parametrize("method", ["rows", "iter_rows"])
 @pytest.mark.parametrize("named", [False, True])
-def test_nullable_rows_are_python_native(method: str, named: bool) -> None:  # noqa: FBT001
+def test_nullable_rows_are_python_native(
+    method: str, named: bool,  # noqa: FBT001
+) -> None:
     native = pd.DataFrame(
         {
             "count": pd.array([1, None], dtype="Int64"),
