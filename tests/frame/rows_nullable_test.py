@@ -98,3 +98,29 @@ def test_iter_rows_zero_columns_across_batches(
     frame = nw.from_native(pd.DataFrame(index=range(13)), eager_only=True)
     expected = [{}] * 13 if named else [()] * 13
     assert list(frame.iter_rows(named=named, buffer_size=buffer_size)) == expected
+
+
+@pytest.mark.parametrize("method", ["rows", "iter_rows"])
+@pytest.mark.parametrize("named", [False, True])
+def test_nullable_categorical_rows_match(method: str, named: bool) -> None:  # noqa: FBT001
+    native = pd.DataFrame(
+        {
+            "category": pd.Categorical(["a", None, "b"]),
+            "text": pd.array(["x", None, "y"], dtype="string"),
+        }
+    )
+    original = native.copy(deep=True)
+    df = nw.from_native(native, eager_only=True)
+    result = list(getattr(df, method)(named=named))
+    expected = (
+        [
+            {"category": "a", "text": "x"},
+            {"category": None, "text": None},
+            {"category": "b", "text": "y"},
+        ]
+        if named
+        else [("a", "x"), (None, None), ("b", "y")]
+    )
+    assert result == expected
+    json.dumps(result)
+    pd.testing.assert_frame_equal(native, original)
