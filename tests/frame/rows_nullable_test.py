@@ -2,10 +2,15 @@ from __future__ import annotations
 
 import json
 
-import pandas as pd
 import pytest
 
 import narwhals as nw
+from narwhals._utils import Implementation
+
+try:
+    import pandas as pd
+except ImportError:
+    pytest.skip("pandas is optional and is not installed", allow_module_level=True)
 
 
 @pytest.mark.parametrize("method", ["rows", "iter_rows"])
@@ -136,8 +141,9 @@ def test_nullable_categorical_rows_match(method: str, named: bool) -> None:  # n
 
 
 def test_pandas_named_rows_zero_columns_unchanged() -> None:
-    frame = nw.from_native(pd.DataFrame(index=range(3)), eager_only=True)
-    assert frame.rows(named=True) == []
+    native = pd.DataFrame(index=range(3))
+    frame = nw.from_native(native, eager_only=True)
+    assert frame.rows(named=True) == native.to_dict(orient="records")
 
 
 @pytest.mark.parametrize("method", ["rows", "iter_rows"])
@@ -213,3 +219,19 @@ def test_temporal_nat_batch_boundaries(named: bool, buffer_size: int) -> None:  
     record = rows[512]
     value = record["temporal"] if isinstance(record, dict) else next(iter(record))
     assert type(value) is pd.Timestamp
+
+
+def test_pandas_like_fallback_row_api_with_modin_dispatch(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test non-pandas row dispatch without importing an optional backend."""
+    native = pd.DataFrame({"value": [1, 2]})
+    frame = nw.from_native(native, eager_only=True)
+    compliant = frame._compliant_frame
+    monkeypatch.setattr(compliant, "_implementation", Implementation.MODIN)
+
+    expected_unnamed = [(1,), (2,)]
+    expected_named = [{"value": 1}, {"value": 2}]
+    assert compliant.rows(named=False) == expected_unnamed
+    assert compliant.rows(named=True) == expected_named
+    assert list(compliant.iter_rows(named=False, buffer_size=2)) == expected_unnamed
+    assert list(compliant.iter_rows(named=True, buffer_size=2)) == expected_named
+
