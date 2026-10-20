@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 
 import pytest
 
@@ -236,3 +237,27 @@ def test_pandas_like_fallback_row_api_with_modin_dispatch(
     assert compliant.rows(named=True) == expected_named
     assert list(compliant.iter_rows(named=False, buffer_size=2)) == expected_unnamed
     assert list(compliant.iter_rows(named=True, buffer_size=2)) == expected_named
+
+@pytest.mark.parametrize("dtype", ["float32", "float64", "Float32", "Float64"])
+@pytest.mark.parametrize("method", ["rows", "iter_rows"])
+@pytest.mark.parametrize("named", [False, True])
+def test_ieee_float_nan_vs_nullable_missing(
+    dtype: str,
+    method: str,
+    named: bool,  # noqa: FBT001
+) -> None:
+    """Keep NumPy floating NaN while normalizing nullable pandas NA."""
+    native = pd.DataFrame({"value": pd.Series([1.0, None], dtype=dtype)})
+    original = native.copy(deep=True)
+    frame = nw.from_native(native, eager_only=True)
+    rows = list(getattr(frame, method)(named=named))
+    first = rows[0]["value"] if named else rows[0][0]
+    missing = rows[1]["value"] if named else rows[1][0]
+
+    assert type(first) is float and first == 1.0
+    if dtype.startswith("Float"):
+        assert missing is None
+    else:
+        assert type(missing) is float and math.isnan(missing)
+    pd.testing.assert_frame_equal(native, original)
+
