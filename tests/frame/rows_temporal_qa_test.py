@@ -31,10 +31,7 @@ def test_pandas_temporal_rows_keep_temporal_scalars(
     second = tuple(values[1].values()) if named else values[1]
 
     assert first == (timestamp, duration)
-    assert second == (
-        timestamp + pd.Timedelta(days=1),
-        duration + pd.Timedelta(hours=1),
-    )
+    assert second == (timestamp + pd.Timedelta(days=1), duration + pd.Timedelta(hours=1))
     assert type(first[0]) is pd.Timestamp
     assert type(first[1]) is pd.Timedelta
     assert type(second[0]) is pd.Timestamp
@@ -53,15 +50,15 @@ def test_missing_temporal_rows_are_none(
 ) -> None:
     """Pandas datetime/timedelta NaT must normalize to None in row outputs."""
     if kind == "datetime":
-        values = pd.to_datetime(["2026-10-20", None])
+        values = pd.to_datetime(pd.Series(["2026-10-20", None], dtype="object"))
     elif kind == "timedelta":
-        values = pd.to_timedelta(["2 days", None])
+        values = pd.to_timedelta(pd.Series(["2 days", None], dtype="object"))
     elif kind == "datetime_utc":
-        values = pd.to_datetime(["2026-10-20", None], utc=True)
+        values = pd.to_datetime(pd.Series(["2026-10-20", None], dtype="object"), utc=True)
     else:
-        values = pd.to_datetime(["2026-10-20", None], utc=True).tz_convert(
-            "Europe/Istanbul"
-        )
+        values = pd.to_datetime(
+            pd.Series(["2026-10-20", None], dtype="object"), utc=True
+        ).dt.tz_convert("Europe/Istanbul")
 
     native = pd.DataFrame(
         {"temporal": values, "number": pd.array([1, None], dtype="Int64")}
@@ -72,7 +69,8 @@ def test_missing_temporal_rows_are_none(
     first = tuple(result[0].values()) if named else result[0]
     second = tuple(result[1].values()) if named else result[1]
 
-    assert first[1] == 1 and type(first[1]) is int
+    assert first[1] == 1
+    assert type(first[1]) is int
     assert second == (None, None)
     if kind == "timedelta":
         assert type(first[0]) is pd.Timedelta
@@ -89,17 +87,20 @@ def test_missing_temporal_rows_across_batches(
 ) -> None:
     """Ensure NaT becomes None at batch boundaries and across all batches."""
     values = pd.to_datetime(
-        ["2026-10-20" if i % 2 == 0 else None for i in range(1031)]
+        pd.Series(["2026-10-20" if i % 2 == 0 else None for i in range(1031)])
     )
     frame = nw.from_native(pd.DataFrame({"when": values}), eager_only=True)
     rows = list(frame.iter_rows(named=named, buffer_size=buffer_size))
     assert len(rows) == 1031
 
     for i in (1, 511, 513, 1029):
-        row = tuple(rows[i].values()) if named else rows[i]
+        record = rows[i]
+        row = tuple(record.values()) if isinstance(record, dict) else record
         assert row == (None,)
-    row = tuple(rows[512].values()) if named else rows[512]
+    record = rows[512]
+    row = tuple(record.values()) if isinstance(record, dict) else record
     assert type(row[0]) is pd.Timestamp
+
 
 @pytest.mark.parametrize("kind", ["datetime", "timedelta"])
 @pytest.mark.parametrize("unit", ["ms", "us", "ns"])
@@ -113,9 +114,7 @@ def test_temporal_units_normalize_nat(
 ) -> None:
     """Preserve real values and normalize NaT across datetime units."""
     if kind == "datetime":
-        values = pd.Series(
-            pd.array(["2026-10-20", "NaT"], dtype=f"datetime64[{unit}]")
-        )
+        values = pd.Series(np.array(["2026-10-20", "NaT"], dtype=f"datetime64[{unit}]"))
         expected_type = pd.Timestamp
     else:
         values = pd.Series(np.array([1, "NaT"], dtype=f"timedelta64[{unit}]"))
