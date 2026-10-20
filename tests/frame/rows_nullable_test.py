@@ -138,3 +138,28 @@ def test_nullable_categorical_rows_match(method: str, named: bool) -> None:  # n
 def test_pandas_named_rows_zero_columns_unchanged() -> None:
     frame = nw.from_native(pd.DataFrame(index=range(3)), eager_only=True)
     assert frame.rows(named=True) == []
+
+@pytest.mark.parametrize("method", ["rows", "iter_rows"])
+@pytest.mark.parametrize("named", [False, True])
+def test_temporal_scalars_remain_pandas_native(
+    method: str,
+    named: bool,  # noqa: FBT001
+) -> None:
+    native = pd.DataFrame(
+        {
+            "timestamp": pd.to_datetime(["2024-01-02", "2024-01-03"]),
+            "duration": pd.to_timedelta([1, 2], unit="D"),
+        }
+    )
+    frame = nw.from_native(native, eager_only=True)
+    result = list(getattr(frame, method)(named=named))
+    expected = [
+        (pd.Timestamp("2024-01-02"), pd.Timedelta(days=1)),
+        (pd.Timestamp("2024-01-03"), pd.Timedelta(days=2)),
+    ]
+
+    actual_rows = [tuple(row.values()) if named else row for row in result]
+    assert actual_rows == expected
+    for timestamp, duration in actual_rows:
+        assert isinstance(timestamp, pd.Timestamp)
+        assert isinstance(duration, pd.Timedelta)
