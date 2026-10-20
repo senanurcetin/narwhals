@@ -9,7 +9,7 @@ from narwhals._utils import Implementation
 
 try:
     import pandas as pd
-except ImportError:
+except ImportError:  # pragma: no cover - exercised by pandas-free CI
     pytest.skip("pandas is optional and is not installed", allow_module_level=True)
 
 
