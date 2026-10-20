@@ -139,6 +139,7 @@ def test_pandas_named_rows_zero_columns_unchanged() -> None:
     frame = nw.from_native(pd.DataFrame(index=range(3)), eager_only=True)
     assert frame.rows(named=True) == []
 
+
 @pytest.mark.parametrize("method", ["rows", "iter_rows"])
 @pytest.mark.parametrize("named", [False, True])
 def test_temporal_scalars_remain_pandas_native(
