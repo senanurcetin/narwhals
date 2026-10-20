@@ -164,3 +164,54 @@ def test_temporal_scalars_remain_pandas_native(
     for timestamp, duration in actual_rows:
         assert isinstance(timestamp, pd.Timestamp)
         assert isinstance(duration, pd.Timedelta)
+
+
+@pytest.mark.parametrize("method", ["rows", "iter_rows"])
+@pytest.mark.parametrize("named", [False, True])
+@pytest.mark.parametrize("kind", ["datetime", "timedelta", "datetime_utc"])
+def test_temporal_missing_rows_become_none(
+    method: str,
+    named: bool,  # noqa: FBT001
+    kind: str,
+) -> None:
+    """Missing datetime/timedelta values become JSON-compatible None."""
+    if kind == "timedelta":
+        temporal = pd.to_timedelta(pd.Series(["2 days", None], dtype="object"))
+    else:
+        temporal = pd.to_datetime(
+            pd.Series(["2026-10-20", None], dtype="object"),
+            utc=kind == "datetime_utc",
+        )
+    native = pd.DataFrame({"temporal": temporal})
+    original = native.copy(deep=True)
+    frame = nw.from_native(native, eager_only=True)
+    rows = list(getattr(frame, method)(named=named))
+    first = rows[0]
+    missing = rows[1]
+    valid_value = first["temporal"] if isinstance(first, dict) else first[0]
+    missing_value = missing["temporal"] if isinstance(missing, dict) else missing[0]
+
+    assert type(valid_value) is (pd.Timedelta if kind == "timedelta" else pd.Timestamp)
+    assert missing_value is None
+    assert json.dumps([missing_value]) == "[null]"
+    pd.testing.assert_frame_equal(native, original)
+
+
+@pytest.mark.parametrize("named", [False, True])
+@pytest.mark.parametrize("buffer_size", [1, 3, 512])
+def test_temporal_nat_batch_boundaries(named: bool, buffer_size: int) -> None:  # noqa: FBT001
+    temporal = pd.to_datetime(
+        pd.Series(["2026-10-20" if i % 2 == 0 else None for i in range(1031)])
+    )
+    frame = nw.from_native(pd.DataFrame({"temporal": temporal}), eager_only=True)
+    rows = list(frame.iter_rows(named=named, buffer_size=buffer_size))
+    assert len(rows) == 1031
+
+    for i in (1, 511, 513, 1029):
+        record = rows[i]
+        missing = record["temporal"] if isinstance(record, dict) else record[0]
+        assert missing is None
+    record = rows[512]
+    value = record["temporal"] if isinstance(record, dict) else record[0]
+    assert type(value) is pd.Timestamp
+
