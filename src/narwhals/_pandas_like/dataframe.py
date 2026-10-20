@@ -397,7 +397,9 @@ class PandasLikeDataFrame(
     def rows(self, *, named: bool) -> list[tuple[Any, ...]] | list[dict[str, Any]]: ...
 
     def rows(self, *, named: bool) -> list[tuple[Any, ...]] | list[dict[str, Any]]:
-        if self._implementation is Implementation.PANDAS:
+        if self._implementation is Implementation.PANDAS and (
+            not named or len(self.native.columns) > 0
+        ):
             return list(self.iter_rows(named=named, buffer_size=512))
 
         if not named:
