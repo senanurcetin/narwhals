@@ -100,3 +100,30 @@ def test_missing_temporal_rows_across_batches(
     row = tuple(rows[512].values()) if named else rows[512]
     assert type(row[0]) is pd.Timestamp
 
+@pytest.mark.parametrize("kind", ["datetime", "timedelta"])
+@pytest.mark.parametrize("unit", ["ms", "us", "ns"])
+@pytest.mark.parametrize("method", ["rows", "iter_rows"])
+@pytest.mark.parametrize("named", [False, True])
+def test_temporal_units_normalize_nat(
+    kind: str,
+    unit: str,
+    method: str,
+    named: bool,  # noqa: FBT001
+) -> None:
+    """Preserve real values and normalize NaT across datetime units."""
+    if kind == "datetime":
+        values = pd.Series(pd.array(["2026-10-20", "NaT"], dtype=f"datetime64[{unit}]"))
+        expected_type = pd.Timestamp
+    else:
+        import numpy as np
+
+        values = pd.Series(np.array([1, "NaT"], dtype=f"timedelta64[{unit}]"))
+        expected_type = pd.Timedelta
+
+    frame = nw.from_native(pd.DataFrame({"temporal": values}), eager_only=True)
+    result = list(getattr(frame, method)(named=named))
+    first = tuple(result[0].values()) if named else result[0]
+    second = tuple(result[1].values()) if named else result[1]
+
+    assert type(first[0]) is expected_type
+    assert second == (None,)
