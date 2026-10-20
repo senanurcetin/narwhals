@@ -68,3 +68,33 @@ def test_no_rows(method: str, named: bool) -> None:  # noqa: FBT001
     native = pd.DataFrame({"value": pd.Series(dtype="Int64")})
     df = nw.from_native(native, eager_only=True)
     assert list(getattr(df, method)(named=named)) == []
+
+
+@pytest.mark.parametrize("named", [False, True])
+@pytest.mark.parametrize("buffer_size", [0, 1, 3, 7, 512])
+def test_nullable_iter_rows_batch_boundaries(
+    named: bool, buffer_size: int,  # noqa: FBT001
+) -> None:
+    native = pd.DataFrame(
+        {
+            "count": pd.array([1, None] * 515, dtype="Int64"),
+            "flag": pd.array([True, None] * 515, dtype="boolean"),
+        }
+    )
+    frame = nw.from_native(native, eager_only=True)
+    rows = list(frame.iter_rows(named=named, buffer_size=buffer_size))
+    assert len(rows) == 1030
+    for index in (0, 1, 2, 511, 512, 1028, 1029):
+        expected = (1, True) if index % 2 == 0 else (None, None)
+        actual = tuple(rows[index].values()) if named else rows[index]
+        assert actual == expected
+
+
+@pytest.mark.parametrize("buffer_size", [0, 1, 2, 5])
+@pytest.mark.parametrize("named", [False, True])
+def test_iter_rows_zero_columns_across_batches(
+    buffer_size: int, named: bool,  # noqa: FBT001
+) -> None:
+    frame = nw.from_native(pd.DataFrame(index=range(13)), eager_only=True)
+    expected = [{}] * 13 if named else [()] * 13
+    assert list(frame.iter_rows(named=named, buffer_size=buffer_size)) == expected
