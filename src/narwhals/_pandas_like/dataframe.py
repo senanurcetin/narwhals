@@ -433,7 +433,13 @@ class PandasLikeDataFrame(
                 batch = self.native.iloc[start : start + batch_size]
                 columns = []
                 for _, series in batch.items():  # noqa: PERF102
-                    values = series.to_numpy(dtype=object, na_value=None).tolist()
+                    # Keep IEEE NaN in regular NumPy float columns: downstream
+                    # consumers distinguish it from pandas nullable missingness.
+                    # Extension Float32/Float64 missing values still become None.
+                    if isinstance(series.dtype, np.dtype) and series.dtype.kind == "f":
+                        values = series.to_numpy(dtype=object).tolist()
+                    else:
+                        values = series.to_numpy(dtype=object, na_value=None).tolist()
                     # Pandas can leave NaT unchanged in naive datetime/timedelta
                     # arrays even with na_value=None (e.g. pandas 2.2).
                     if series.dtype.kind in {"M", "m"} and series.hasnans:
