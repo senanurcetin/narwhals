@@ -419,21 +419,23 @@ class PandasLikeDataFrame(
     def iter_rows(
         self, *, named: bool, buffer_size: int
     ) -> Iterator[tuple[Any, ...]] | Iterator[dict[str, Any]]:
-        # The param ``buffer_size`` is only here for compatibility with the Polars API
-        # and has no effect on the output.
         if self._implementation is Implementation.PANDAS:
-            # Convert nullable extension scalars to Python objects column-wise.
-            columns = [
-                series.to_numpy(dtype=object, na_value=None).tolist()
-                for _, series in self.native.items()
-            ]
-            rows = zip(*columns) if columns else (() for _ in range(len(self.native)))
-            if named:
-                names = self.native.columns
-                for row in rows:
-                    yield dict(zip(names, row, strict=False))
-            else:
-                yield from rows
+            # Convert each batch column-wise to preserve Python-native values
+            # without materializing the entire DataFrame in memory.
+            names = self.native.columns
+            batch_size = max(buffer_size, 1)
+            for start in range(0, len(self.native), batch_size):
+                batch = self.native.iloc[start : start + batch_size]
+                columns = [
+                    series.to_numpy(dtype=object, na_value=None).tolist()
+                    for _, series in batch.items()
+                ]
+                rows = zip(*columns) if columns else (() for _ in range(len(batch)))
+                if named:
+                    for row in rows:
+                        yield dict(zip(names, row, strict=False))
+                else:
+                    yield from rows
         elif not named:
             yield from self.native.itertuples(index=False, name=None)
         else:
