@@ -62,7 +62,9 @@ def test_missing_temporal_rows_are_none(
             "Europe/Istanbul"
         )
 
-    native = pd.DataFrame({"temporal": values, "number": pd.array([1, None], dtype="Int64")})
+    native = pd.DataFrame(
+        {"temporal": values, "number": pd.array([1, None], dtype="Int64")}
+    )
     original = native.copy(deep=True)
     frame = nw.from_native(native, eager_only=True)
     result = list(getattr(frame, method)(named=named))
