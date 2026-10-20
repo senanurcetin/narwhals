@@ -397,14 +397,14 @@ class PandasLikeDataFrame(
     def rows(self, *, named: bool) -> list[tuple[Any, ...]] | list[dict[str, Any]]: ...
 
     def rows(self, *, named: bool) -> list[tuple[Any, ...]] | list[dict[str, Any]]:
+        if self._implementation is Implementation.PANDAS:
+            return list(self.iter_rows(named=named, buffer_size=512))
+
         if not named:
             # cuDF does not support itertuples. But it does support to_dict!
             if self._implementation is Implementation.CUDF:
                 # Extract the row values from the named rows
                 return [tuple(row.values()) for row in self.rows(named=True)]
-
-            if self._implementation is Implementation.PANDAS:
-                return list(self.iter_rows(named=False, buffer_size=512))
 
             return list(self.native.itertuples(index=False, name=None))
 
