@@ -437,13 +437,10 @@ class PandasLikeDataFrame(
                     # consumers distinguish it from nullable missing values.
                     na_value = (
                         np.nan
-                        if isinstance(series.dtype, np.dtype)
-                        and series.dtype.kind == "f"
+                        if isinstance(series.dtype, np.dtype) and series.dtype.kind == "f"
                         else None
                     )
-                    values = series.to_numpy(
-                        dtype=object, na_value=na_value
-                    ).tolist()
+                    values = series.to_numpy(dtype=object, na_value=na_value).tolist()
                     # Pandas can leave NaT unchanged in naive datetime/timedelta
                     # arrays even with na_value=None (e.g. pandas 2.2).
                     if series.dtype.kind in {"M", "m"} and series.hasnans:

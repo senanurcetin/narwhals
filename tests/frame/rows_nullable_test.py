@@ -237,6 +237,7 @@ def test_pandas_like_fallback_row_api_with_modin_dispatch(
     assert list(compliant.iter_rows(named=False, buffer_size=2)) == expected_unnamed
     assert list(compliant.iter_rows(named=True, buffer_size=2)) == expected_named
 
+
 @pytest.mark.parametrize("dtype", ["float32", "float64"])
 @pytest.mark.parametrize("method", ["rows", "iter_rows"])
 @pytest.mark.parametrize("named", [False, True])
