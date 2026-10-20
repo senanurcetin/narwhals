@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -112,11 +113,11 @@ def test_temporal_units_normalize_nat(
 ) -> None:
     """Preserve real values and normalize NaT across datetime units."""
     if kind == "datetime":
-        values = pd.Series(pd.array(["2026-10-20", "NaT"], dtype=f"datetime64[{unit}]"))
+        values = pd.Series(
+            pd.array(["2026-10-20", "NaT"], dtype=f"datetime64[{unit}]")
+        )
         expected_type = pd.Timestamp
     else:
-        import numpy as np
-
         values = pd.Series(np.array([1, "NaT"], dtype=f"timedelta64[{unit}]"))
         expected_type = pd.Timedelta
 
