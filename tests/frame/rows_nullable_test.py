@@ -260,6 +260,7 @@ def test_numpy_float_nan_preserved_in_rows(
 
     assert all(type(value) is float for value in values)
     assert values[0] == 1.5
-    assert pd.isna(values[1]) and values[1] is not None
+    assert pd.isna(values[1])
+    assert values[1] is not None
     assert values[2] == float("inf")
     assert values[3] == -float("inf")
