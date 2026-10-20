@@ -403,6 +403,9 @@ class PandasLikeDataFrame(
                 # Extract the row values from the named rows
                 return [tuple(row.values()) for row in self.rows(named=True)]
 
+            if self._implementation is Implementation.PANDAS:
+                return list(self.iter_rows(named=False, buffer_size=512))
+
             return list(self.native.itertuples(index=False, name=None))
 
         return self.native.to_dict(orient="records")
@@ -418,7 +421,20 @@ class PandasLikeDataFrame(
     ) -> Iterator[tuple[Any, ...]] | Iterator[dict[str, Any]]:
         # The param ``buffer_size`` is only here for compatibility with the Polars API
         # and has no effect on the output.
-        if not named:
+        if self._implementation is Implementation.PANDAS:
+            # Convert nullable extension scalars to Python objects column-wise.
+            columns = [
+                series.to_numpy(dtype=object, na_value=None).tolist()
+                for _, series in self.native.items()
+            ]
+            rows = zip(*columns) if columns else (() for _ in range(len(self.native)))
+            if named:
+                names = self.native.columns
+                for row in rows:
+                    yield dict(zip(names, row, strict=False))
+            else:
+                yield from rows
+        elif not named:
             yield from self.native.itertuples(index=False, name=None)
         else:
             col_names = self.native.columns
