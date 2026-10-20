@@ -251,8 +251,13 @@ def test_ieee_float_nan_vs_nullable_missing(
     original = native.copy(deep=True)
     frame = nw.from_native(native, eager_only=True)
     rows = list(getattr(frame, method)(named=named))
-    first = rows[0]["value"] if named else rows[0][0]
-    missing = rows[1]["value"] if named else rows[1][0]
+    first_row, missing_row = rows
+    first = first_row["value"] if isinstance(first_row, dict) else next(iter(first_row))
+    missing = (
+        missing_row["value"]
+        if isinstance(missing_row, dict)
+        else next(iter(missing_row))
+    )
 
     assert type(first) is float and first == 1.0
     if dtype.startswith("Float"):
