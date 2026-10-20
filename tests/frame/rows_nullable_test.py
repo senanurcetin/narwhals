@@ -58,8 +58,11 @@ def test_plain_rows_unchanged(named: bool) -> None:  # noqa: FBT001
 )
 def test_zero_columns_with_rows(method: str, named: bool) -> None:  # noqa: FBT001
     df = nw.from_native(pd.DataFrame(index=[0, 1, 2]), eager_only=True)
-    expected = [{}, {}, {}] if named else [(), (), ()]
-    assert list(getattr(df, method)(named=named)) == expected
+    result = list(getattr(df, method)(named=named))
+    if named:
+        assert result == [{}, {}, {}]
+    else:
+        assert result == [(), (), ()]
 
 
 @pytest.mark.parametrize("method", ["rows", "iter_rows"])
@@ -87,7 +90,8 @@ def test_nullable_iter_rows_batch_boundaries(
     assert len(rows) == 1030
     for index in (0, 1, 2, 511, 512, 1028, 1029):
         expected = (1, True) if index % 2 == 0 else (None, None)
-        actual = tuple(rows[index].values()) if named else rows[index]
+        row = rows[index]
+        actual = tuple(row.values()) if isinstance(row, dict) else row
         assert actual == expected
 
 
@@ -98,8 +102,11 @@ def test_iter_rows_zero_columns_across_batches(
     named: bool,  # noqa: FBT001
 ) -> None:
     frame = nw.from_native(pd.DataFrame(index=range(13)), eager_only=True)
-    expected = [{}] * 13 if named else [()] * 13
-    assert list(frame.iter_rows(named=named, buffer_size=buffer_size)) == expected
+    result = list(frame.iter_rows(named=named, buffer_size=buffer_size))
+    if named:
+        assert result == [{}] * 13
+    else:
+        assert result == [()] * 13
 
 
 @pytest.mark.parametrize("method", ["rows", "iter_rows"])
