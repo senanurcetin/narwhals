@@ -208,8 +208,8 @@ def test_temporal_nat_batch_boundaries(named: bool, buffer_size: int) -> None:  
 
     for i in (1, 511, 513, 1029):
         record = rows[i]
-        missing = record["temporal"] if isinstance(record, dict) else tuple(record)[0]
+        missing = record["temporal"] if isinstance(record, dict) else next(iter(record))
         assert missing is None
     record = rows[512]
-    value = record["temporal"] if isinstance(record, dict) else tuple(record)[0]
+    value = record["temporal"] if isinstance(record, dict) else next(iter(record))
     assert type(value) is pd.Timestamp
