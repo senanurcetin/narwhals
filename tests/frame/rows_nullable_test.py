@@ -179,8 +179,7 @@ def test_temporal_missing_rows_become_none(
         temporal = pd.to_timedelta(pd.Series(["2 days", None], dtype="object"))
     else:
         temporal = pd.to_datetime(
-            pd.Series(["2026-10-20", None], dtype="object"),
-            utc=kind == "datetime_utc",
+            pd.Series(["2026-10-20", None], dtype="object"), utc=kind == "datetime_utc"
         )
     native = pd.DataFrame({"temporal": temporal})
     original = native.copy(deep=True)
@@ -214,4 +213,3 @@ def test_temporal_nat_batch_boundaries(named: bool, buffer_size: int) -> None:  
     record = rows[512]
     value = record["temporal"] if isinstance(record, dict) else record[0]
     assert type(value) is pd.Timestamp
-
