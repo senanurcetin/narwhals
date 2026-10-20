@@ -400,7 +400,10 @@ class PandasLikeDataFrame(
         if self._implementation is Implementation.PANDAS and (
             not named or len(self.native.columns) > 0
         ):
-            return list(self.iter_rows(named=named, buffer_size=512))
+            return cast(
+                "list[tuple[Any, ...]] | list[dict[str, Any]]",
+                list(self.iter_rows(named=named, buffer_size=512)),
+            )
 
         if not named:
             # cuDF does not support itertuples. But it does support to_dict!
