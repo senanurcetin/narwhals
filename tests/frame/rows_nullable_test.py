@@ -236,3 +236,29 @@ def test_pandas_like_fallback_row_api_with_modin_dispatch(
     assert compliant.rows(named=True) == expected_named
     assert list(compliant.iter_rows(named=False, buffer_size=2)) == expected_unnamed
     assert list(compliant.iter_rows(named=True, buffer_size=2)) == expected_named
+
+@pytest.mark.parametrize("dtype", ["float32", "float64"])
+@pytest.mark.parametrize("method", ["rows", "iter_rows"])
+@pytest.mark.parametrize("named", [False, True])
+def test_numpy_float_nan_preserved_in_rows(
+    dtype: str,
+    method: str,
+    named: bool,  # noqa: FBT001
+) -> None:
+    """IEEE NaN remains distinct from nullable pd.NA for downstream consumers."""
+    native = pd.DataFrame(
+        {
+            "value": pd.Series(
+                [1.5, float("nan"), float("inf"), -float("inf")], dtype=dtype
+            )
+        }
+    )
+    frame = nw.from_native(native, eager_only=True)
+    result = list(getattr(frame, method)(named=named))
+    values = [row["value"] if named else row[0] for row in result]
+
+    assert all(type(value) is float for value in values)
+    assert values[0] == 1.5
+    assert pd.isna(values[1]) and values[1] is not None
+    assert values[2] == float("inf")
+    assert values[3] == -float("inf")
